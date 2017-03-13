@@ -4,6 +4,7 @@
 #include "si702x.h"
 #include "bmp180.h"
 #include "time.h"
+#include <unistd.h>
 
 const char version[] = "v1.5";
 
@@ -20,6 +21,8 @@ int main(int argc, char **argv)
 	int WBVersion = 2;
 	char *device = "/dev/i2c-1";
 
+
+
 	if (argc == 2) {
 		device = argv[1];
 	} else if (argc > 2) {
@@ -27,6 +30,12 @@ int main(int argc, char **argv)
 		printf("sudo ./weather_board [i2c node](default \"/dev/i2c-1\")\n");
 		return -1;
 	}
+
+        if(access(device,W_OK)){
+                printf("Can't open '%s'. Check permissions or run me with sudo!\n",device);
+		return -1;
+        }
+
 
 	if (si1132_begin(device)==-1) return -1;
 	if (bme280_begin(device) < 0) {
