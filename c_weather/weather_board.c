@@ -28,10 +28,10 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	si1132_begin(device);
+	if (si1132_begin(device)==-1) return -1;
 	if (bme280_begin(device) < 0) {
-		si702x_begin(device);
-		bmp180_begin(device);
+		if(si702x_begin(device)==-1) return -1;
+		if(bmp180_begin(device)==-1) return -1;
 		WBVersion = 1;
 	}
 
