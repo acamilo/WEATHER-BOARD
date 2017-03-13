@@ -3,6 +3,7 @@
 #include "si1132.h"
 #include "si702x.h"
 #include "bmp180.h"
+#include "time.h"
 
 const char version[] = "v1.5";
 
@@ -34,34 +35,24 @@ int main(int argc, char **argv)
 		WBVersion = 1;
 	}
 
-	printf("\e[2J");
-	printf("\e[5;30HWEATHER-BOARD %s\n", version);
-
+	printf("datetime,UV Index,Visable Lux,IR Lux,Temp C,Humidity %%,Pressure hPa,Altitude m\n");
 	while (1) {
-		printf("\e[H======== si1132 ========\n");
-		printf("UV_index : %.2f\e[K\n", Si1132_readUV()/100.0);
-		printf("Visible : %.0f Lux\e[K\n", Si1132_readVisible());
-		printf("IR : %.0f Lux\e[K\n", Si1132_readIR());
-		if (WBVersion == 2) {
+		time_t t = time(NULL);
+		struct tm tm = *localtime(&t);
+		printf("%d-%d-%d %d:%d:%d,\t", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+		//printf("\e[H======== si1132 ========\n");
+		printf("%.2f,\t", Si1132_readUV()/100.0);
+		printf("%.0f,\t", Si1132_readVisible());
+		printf("%.0f,\t", Si1132_readIR());
 			bme280_read_pressure_temperature_humidity(
 						&pressure, &temperature, &humidity);
-			printf("======== bme280 ========\n");
-			printf("temperature : %.2lf 'C\e[K\n", (double)temperature/100.0);
-			printf("humidity : %.2lf %%\e[K\n", (double)humidity/1024.0);
-			printf("pressure : %.2lf hPa\e[K\n", (double)pressure/100.0);
-			printf("altitude : %f m\e[K\n", bme280_readAltitude(pressure,
+			//printf("======== bme280 ========\n");
+			printf("%.2lf,\t", (double)temperature/100.0);
+			printf("%.2lf,\t", (double)humidity/1024.0);
+			printf("%.2lf,\t", (double)pressure/100.0);
+			printf("%f\n", bme280_readAltitude(pressure,
 								SEALEVELPRESSURE_HPA));
-		} else {
-			printf("======== bmp180 ========\n");
-			printf("temperature : %.2f 'C\e[K\n", BMP180_readTemperature());
-			printf("pressure : %.2f hPa\e[K\n", BMP180_readPressure()/100);
-			printf("Altitude : %.2f meter\e[K\n",
-					BMP180_readAltitude(SEALEVELPRESSURE_HPA));
-			printf("======== si7020 ========\n");
-			printf("temperature : %.2f 'C\e[K\n", Si702x_readTemperature());
-			printf("humidity : %.2f %%\e[K\n", Si702x_readHumidity());
-		}
-
+		fflush(stdout);
 		usleep(1000000);
 	}
 	return 0;
