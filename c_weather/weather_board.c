@@ -5,42 +5,67 @@
 #include "bmp180.h"
 #include "time.h"
 #include <unistd.h>
+#include <getopt.h>
 
 const char version[] = "v1.5";
+#define ARGUMENT_ERROR 		-1
+#define PERMISSIONS_ERROR	-2
+#define IIC_ERROR				-3
+#define SENSOR_ERROR			-4
 
 static int pressure;
 static int temperature;
 static int humidity;
 static float altitude;
+int verbose=0;
+int csv=0;
+int single=0;
 
 float SEALEVELPRESSURE_HPA = 1024.25;
+
+void print_usage() {
+    printf("\nweather_board: [-vchs] [-d DEVICE]\n\t-h\tusage\n\t-s\tPrint values and exit. Don't keep printing.\n\t-c\tCSV Output\n\t-v\tVerbose Output\n\t-d\tiic bus to use (/dev/i2c-1) default \n\n");
+}
+
 
 int main(int argc, char **argv)
 {
 	int status = 0;
+	int option = 0;
 	int WBVersion = 2;
 	char *device = "/dev/i2c-1";
 
 
-
-	if (argc == 2) {
-		device = argv[1];
-	} else if (argc > 2) {
-		printf("Usage :\n");
-		printf("sudo ./weather_board [i2c node](default \"/dev/i2c-1\")\n");
-		return -1;
-	}
-
-        if(access(device,W_OK)){
-                printf("Can't open '%s'. Check permissions or run me with sudo!\n",device);
-		return -1;
+    while ((option = getopt(argc, argv,"hvcd:")) != -1) {
+        switch (option) {
+             case 'v' : verbose = 1;
+                 break;
+             case 's' : single = 1;
+                 break;
+				 case 'c' : csv = 1;
+                 break;
+             case 'd' : device = optarg; 
+                 break;
+				 case 'h':
+             default: print_usage(); 
+                 exit(ARGUMENT_ERROR);
+        }
+    }
+		if(access(device,F_OK)==-1){
+			printf("Can't find '%s'. Does this computer have IIC?!\n",device);
+			return IIC_ERROR;
+		}
+		  
+      if(access(device,W_OK)){
+			printf("Can't open '%s'. Check permissions or run me with sudo!\n",device);
+			return PERMISSIONS_ERROR;
         }
 
 
-	if (si1132_begin(device)==-1) return -1;
+	if (si1132_begin(device)==-1) return SENSOR_ERROR;
 	if (bme280_begin(device) < 0) {
-		if(si702x_begin(device)==-1) return -1;
-		if(bmp180_begin(device)==-1) return -1;
+		if(si702x_begin(device)==-1) return SENSOR_ERROR;
+		if(bmp180_begin(device)==-1) return SENSOR_ERROR;
 		WBVersion = 1;
 	}
 
