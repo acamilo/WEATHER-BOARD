@@ -28,8 +28,12 @@ int initWB(char * iic){
 }
 
 void getWBData(float *temperature, float *pressure, float *humidity, float *uv, float *visable, float *ir){
+	s32 itemp, ipress, ihum;
+	bme280_read_pressure_temperature_humidity(ipress,itemp,ihum);
 
-	bme280_read_pressure_temperature_humidity(pressure,temperature,humidity);
+	*temperature=(float)itemp/100.0;
+	*pressure=(float)ihum/1024.0;
+	*humidity=(float)ipress/100.0;
 
 	*uv       = Si1132_readUV();
 	*visable  = Si1132_readVisible();
